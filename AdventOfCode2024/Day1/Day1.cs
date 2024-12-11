@@ -2,9 +2,34 @@
 
 public static class Day1
 {
-   public static async Task<int> GetAnswer()
+   public static int GetDistancesSum()
    {
-      var lines = await File.ReadAllLinesAsync(@"Day1\day1.txt");
+      var (firstList, secondList) = GetLists();
+
+      var differences = firstList
+         .Zip(secondList)
+         .Sum(x => Math.Abs(x.First - x.Second));
+
+      return differences;
+   }
+
+   public static int GetSimillarityScore()
+   {
+      var (firstList, secondList) = GetLists();
+
+      var multiplicationTable = new Dictionary<int, int>();
+
+      foreach (var x in secondList)
+         multiplicationTable[x] = 1 + multiplicationTable.GetValueOrDefault(x, 0);
+
+      var simillarity = firstList.Sum(x => x * multiplicationTable.GetValueOrDefault(x, 0));
+
+      return simillarity;
+   }
+
+   private static (List<int> FirstList, List<int> SecondList) GetLists()
+   {
+      var lines = File.ReadAllLines(@"Day1\day1.txt");
 
       var pairs = lines
          .Select(x => x
@@ -24,8 +49,6 @@ public static class Day1
       firstList.Sort();
       secondList.Sort();
 
-      var differences = firstList.Zip(secondList).Sum(x => Math.Abs(x.First - x.Second));
-
-      return differences;
+      return (firstList, secondList);
    }
 }

@@ -1,10 +1,10 @@
-﻿using AdventOfCode2024.Day1;
+﻿using AdventOfCode2024.Day3;
 
 internal class Program
 {
-   private static async Task Main(string[] args)
+   private static void Main(string[] args)
    {
-      var result = await Day1.GetAnswer();
+      var result = Day3.GetMultiplication();
       Console.WriteLine(result);
    }
 }
