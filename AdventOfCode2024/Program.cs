@@ -1,10 +1,10 @@
-﻿using AdventOfCode2024.Day3;
+﻿using AdventOfCode2024.Day5;
 
 internal class Program
 {
    private static void Main(string[] args)
    {
-      var result = Day3.GetMultiplication();
+      var result = Day5.SumWrongUpdates();
       Console.WriteLine(result);
    }
 }

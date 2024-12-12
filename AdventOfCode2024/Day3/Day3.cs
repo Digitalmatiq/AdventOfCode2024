@@ -11,6 +11,30 @@ public static class Day3
       var searchValues = SearchValues.Create(["mul(", "do()", "don't()"], StringComparison.Ordinal);
       var finalResult = 0L;
 
+      int pos;
+      ReadOnlySpan<char> remaining = data;
+      while ((pos = remaining.IndexOfAny(searchValues)) >= 0)
+      {
+         if (ParseMul(remaining, pos, ',', out var first) && ParseMul(remaining, pos + first!.Length + 1, ')', out var second))
+         {
+            var firstNum = long.Parse(first);
+            var secondNum = long.Parse(second!);
+
+            finalResult += firstNum * secondNum;
+         }
+
+         remaining = remaining.Slice(pos + 1);
+      }
+
+      return finalResult;
+   }
+
+   public static long GetMultiplicationWithEnabling()
+   {
+      var data = File.ReadAllText(@"Day3\day3.txt");
+      var searchValues = SearchValues.Create(["mul(", "do()", "don't()"], StringComparison.Ordinal);
+      var finalResult = 0L;
+
       var enabledMuls = true;
       int pos;
       ReadOnlySpan<char> remaining = data;
