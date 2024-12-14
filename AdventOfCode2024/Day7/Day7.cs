@@ -6,20 +6,24 @@ public static class Day7
    {
       var tests = LoadTests();
       var sum = tests
-         .Where(IsTestTrue)
+         .Where(x => IsTestTrue(x, withConcat: false))
          .Sum(x => x.Value);
 
       return sum;
    }
 
-   private static bool IsTestTrue(TestResult test)
+   public static long SumTestsWithConcat()
    {
-      var value = test.Value;
-      var biggest = test.Nums.Aggregate(1L, (part, x) => part * x);
+      var tests = LoadTests();
+      var sum = tests
+         .Where(x => IsTestTrue(x, withConcat: true))
+         .Sum(x => x.Value);
 
-      if (value >= biggest)
-         return value == biggest;
+      return sum;
+   }
 
+   private static bool IsTestTrue(TestResult test, bool withConcat)
+   {
       static bool IsTestTrueInternal(TestResult test, Operation[] ops)
       {
          var total = test.Nums.First();
@@ -31,13 +35,17 @@ public static class Day7
             {
                Operation.Add => total += current,
                Operation.Multiply => total *= current,
+               Operation.Concat => total = long.Parse(total.ToString() + current.ToString()),
             };
+
+            if (total > test.Value)
+               break;
          }
 
          return total == test.Value;
       }
 
-      var variants = GeneratePermutations(test.Nums.Count - 1);
+      var variants = GenerateCombinations(test.Nums.Count - 1, withConcat);
       foreach (var variant in variants)
       {
          if (IsTestTrueInternal(test, variant))
@@ -47,10 +55,12 @@ public static class Day7
       return false;
    }
 
-   private static List<Operation[]> GeneratePermutations(int n)
+   private static List<Operation[]> GenerateCombinations(int n, bool withConcat)
    {
       var combinations = new List<Operation[]>();
       var allOps = Enum.GetValues<Operation>();
+      if (!withConcat)
+         allOps = allOps.Where(x => x != Operation.Concat).ToArray();
 
       void GenerateCombinationsInternal(Operation[] array, int index)
       {
@@ -75,7 +85,8 @@ public static class Day7
    private enum Operation
    {
       Add,
-      Multiply
+      Multiply,
+      Concat
    }
 
    private static List<TestResult> LoadTests()
