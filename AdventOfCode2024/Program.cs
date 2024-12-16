@@ -4,7 +4,7 @@ internal class Program
 {
    private static void Main(string[] args)
    {
-      var result = Day9.GetChecksum();
+      var result = Day9.GetChecksumDefragmented();
       Console.WriteLine(result);
    }
 }

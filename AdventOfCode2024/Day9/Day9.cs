@@ -2,89 +2,89 @@
 
 public static class Day9
 {
+   public static long GetChecksumDefragmented()
+   {
+      var data = LoadExpandedData();
+      CompactSpace(data, withFragmentation: false);
+
+      return GetChecksum(data);
+   }
+
    public static long GetChecksum()
    {
       var data = LoadExpandedData();
+      CompactSpace(data, withFragmentation: true);
 
-      var left = data.First;
-      var right = data.Last;
+      return GetChecksum(data);
+   }
 
-      while (left.Value.FileId != right.Value.Va.FileId)
+   private static long GetChecksum(LinkedList<DiskSpace> data)
+   {
+      var checkSum = 0L;
+      var count = 0;
+      for (var item = data.First; item != null; item = item.Next)
       {
-         while (left.Value.Values.Any(x => x.Value == -1))
+         if (item.Value.FileId != -1)
          {
-            var leftValues = left.Value.Values;
+            var length = item.Value.Length;
 
-            while (right.Value.Values.All(x => x.Value == -1))
-               right = right.Previous;
-
-            var rightValues = right.Value.Values;
-
-            for (var i = 0; i < leftValues.Count; i++)
-            {
-               if (leftValues[i].Value != -1)
-                  continue;
-
-               for (var j = 0; j < rightValues.Count; j++)
-               {
-                  if (rightValues[j].Value == -1)
-                     continue;
-
-                  leftValues[i] = rightValues[j];
-                  rightValues.RemoveAt(j);
-                  break;
-               }
-
-               break;
-            }
-         }
-
-         left = left.Next;
-      }
-
-      while (true)
-      {
-         var values = data.Last.Value.Values;
-
-         if (!values.All(x => x.Value == -1))
-         {
-            var count = 0;
-
-            while (values.Any(x => x.Value == -1))
-            {
-               if (values[count].Value == -1)
-               {
-                  values.RemoveAt(count);
-                  count = 0;
-                  continue;
-               }
-
-               count++;
-            }
-
-            break;
-         }
-
-         data.RemoveLast();
-      }
-
-      var checkSum = 0;
-      foreach (var file in data)
-      {
-         foreach (var value in file.Values)
-         {
-            checkSum += value.FileId * value.Value;
+            for (var i = 0; i < length; i++)
+               checkSum += count++ * item.Value.FileId;
          }
       }
 
       return checkSum;
    }
 
-   private static LinkedList<DiskFile> LoadExpandedData()
+   private static void CompactSpace(LinkedList<DiskSpace> data, bool withFragmentation)
+   {
+      var left = data.First!;
+      var right = data.Last!;
+
+      while (left.Value != right.Value)
+      {
+         if (left.Value.FileId != -1)
+         {
+            left = left.Next;
+            continue;
+         }
+
+         if (right.Value.FileId == -1)
+         {
+            right = right.Previous;
+            continue;
+         }
+
+         var delta = right.Value.Length - left.Value.Length;
+         if (delta > 0 && withFragmentation)
+         {
+            data.AddAfter(right, new DiskSpace(-1, left.Value.Length));
+            left.Value = new DiskSpace(right.Value.FileId, left.Value.Length);
+            right.Value = new DiskSpace(right.Value.FileId, delta);
+         }
+         else if (delta <= 0)
+         {
+            data.AddBefore(left, new DiskSpace(right.Value.FileId, right.Value.Length));
+            left.Value = new DiskSpace(-1, -delta);
+            right.Value = new DiskSpace(-1, right.Value.Length);
+         }
+         else
+         {
+            if (!withFragmentation)
+            {
+               //if (left.Value.Length <  right.Value.Length)
+
+               right = right.Previous;
+            }
+         }
+      }
+   }
+
+   private static LinkedList<DiskSpace> LoadExpandedData()
    {
       var @string = File.ReadAllText(@"Day9\day9.txt");
 
-      var list = new LinkedList<DiskFile>();
+      var list = new LinkedList<DiskSpace>();
       int i;
 
       for (i = 0; i < @string.Length - 1; i += 2)
@@ -93,15 +93,8 @@ public static class Day9
          var identityMultiple = Convert.ToInt32(@string[i] - '0');
          var slotsMultiple = Convert.ToInt32(@string[i + 1] - '0');
 
-         var values = Enumerable
-            .Range(0, identityMultiple)
-            .Select(x => new FileValue(identity, identity))
-            .Concat(Enumerable
-               .Range(0, slotsMultiple)
-               .Select(x => new FileValue(identity, -1)))
-            .ToList();
-
-         list.AddLast(new DiskFile(values));
+         list.AddLast(new DiskSpace(identity, identityMultiple));
+         list.AddLast(new DiskSpace(-1, slotsMultiple));
       }
 
       if (@string.Length % 2 != 0)
@@ -109,18 +102,14 @@ public static class Day9
          var identity = i / 2;
          var identityMultiple = Convert.ToInt32(@string[^1] - '0');
 
-         var values = Enumerable
-            .Range(0, identityMultiple)
-            .Select(x => new FileValue(identity, identity))
-            .ToList();
-
-         list.AddLast(new DiskFile(values));
+         list.AddLast(new DiskSpace(identity, identityMultiple));
       }
 
       return list;
    }
 
-   private readonly record struct FileValue(int FileId, int Value);
-
-   private sealed record DiskFile(List<FileValue> Values);
+   private readonly record struct DiskSpace(int FileId, int Length)
+   {
+      public Guid Guid { get; } = Guid.NewGuid();
+   }
 }
