@@ -1,10 +1,10 @@
-﻿using AdventOfCode2024.Day9;
+﻿using AdventOfCode2024.Day10;
 
 internal class Program
 {
    private static void Main(string[] args)
    {
-      var result = Day9.GetChecksumDefragmented();
+      var result = Day10.GetTrailheadsCount();
       Console.WriteLine(result);
    }
 }

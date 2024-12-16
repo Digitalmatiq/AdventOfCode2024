@@ -24,12 +24,14 @@ public static class Day9
       var count = 0;
       for (var item = data.First; item != null; item = item.Next)
       {
-         if (item.Value.FileId != -1)
-         {
-            var length = item.Value.Length;
+         var length = item.Value.Length;
 
-            for (var i = 0; i < length; i++)
-               checkSum += count++ * item.Value.FileId;
+         for (var i = 0; i < length; i++)
+         {
+            if (item.Value.FileId != -1)
+               checkSum += count * item.Value.FileId;
+
+            count++;
          }
       }
 
@@ -67,14 +69,37 @@ public static class Day9
             data.AddBefore(left, new DiskSpace(right.Value.FileId, right.Value.Length));
             left.Value = new DiskSpace(-1, -delta);
             right.Value = new DiskSpace(-1, right.Value.Length);
+
+            if (!withFragmentation)
+               left = data.First;
          }
          else
          {
             if (!withFragmentation)
             {
-               //if (left.Value.Length <  right.Value.Length)
+               var first = data.First;
+               var second = right;
 
-               right = right.Previous;
+               var hasGap = true;
+
+               while (first.Value.Length < second.Value.Length || first.Value.FileId != -1)
+               {
+                  if (first.Value == second.Value)
+                  {
+                     hasGap = false;
+                     break;
+                  }
+
+                  first = first.Next;
+               }
+
+               if (!hasGap)
+               {
+                  right = right.Previous;
+                  continue;
+               }
+
+               left = first;
             }
          }
       }
