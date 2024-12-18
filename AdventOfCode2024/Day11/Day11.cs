@@ -31,58 +31,53 @@ public static class Day11
       return stones.Count;
    }
 
-   public static int CountStonesWithCaching()
+   private readonly record struct CacheEntry(long Number, int Step);
+
+   public static long CountStonesWithCaching()
    {
       var stones = ParseStoneInput();
-      var cache = new Dictionary<long, BlinkingStoneStep>();
 
-      static void Transform(long originalNumber, long number, int step, int stoppingStep, List<long> partialTransformed)
+      var cache = new Dictionary<CacheEntry, long>();
+
+      long CountInternal(long number, int step)
       {
-         if (step == stoppingStep)
-            return;
+         if (step == 0)
+            return 1;
 
-         partialTransformed.Remove(number);
-         var nextStep = step + 1;
+         if (cache.TryGetValue(new CacheEntry(number, step), out var value))
+            return value;
 
+         var nextStep = step - 1;
          if (number == 0)
          {
-            partialTransformed.Add(1);
-            Transform(originalNumber, 1, nextStep, stoppingStep, partialTransformed);
+            value = CountInternal(1, nextStep);
+            cache.TryAdd(new CacheEntry(1, nextStep), value);
 
-            return;
+            return value;
          }
 
          if (IsNumberSplittable(number, out var firstHalf, out var secondHalf))
          {
-            partialTransformed.Add(firstHalf);
-            Transform(originalNumber, firstHalf, nextStep, stoppingStep, partialTransformed);
+            var first = CountInternal(firstHalf, nextStep);
+            cache.TryAdd(new CacheEntry(firstHalf, nextStep), first);
 
-            partialTransformed.Add(secondHalf);
-            Transform(originalNumber, secondHalf, nextStep, stoppingStep, partialTransformed);
-            return;
+            var second = CountInternal(secondHalf, nextStep);
+            cache.TryAdd(new CacheEntry(secondHalf, nextStep), second);
+
+            return first + second;
          }
 
          var newNumber = number * 2024;
-         partialTransformed.Add(newNumber);
+         value = CountInternal(newNumber, nextStep);
+         cache.TryAdd(new CacheEntry(newNumber, nextStep), value);
 
-         Transform(originalNumber, newNumber, nextStep, stoppingStep, partialTransformed);
+         return value;
       }
 
-      List<long> finalStones = [];
-      foreach (var stone in stones)
-      {
-         for (var i = 0; i < 75; i++)
-         {
-            List<long> transformed = [];
-            Transform(stone, stone, 0, i, transformed);
-            cache.Add(stone, new BlinkingStoneStep());
-         }
-      }
+      var count = stones.Sum(x => CountInternal(x, 75));
 
-      return finalStones.Count;
+      return count;
    }
-
-   private readonly record struct BlinkingStoneStep(int Step, List<long> Transformed);
 
    private static bool IsNumberSplittable(long number, out int firstHalf, out int secondHalf)
    {
