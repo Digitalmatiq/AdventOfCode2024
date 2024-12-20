@@ -4,52 +4,48 @@ public static class Day13
 {
    public static long CountTokens() => LoadData().Sum(x => SolveMachineWithArray(x) ?? 0);
 
-   public static long CountTokensShifted() => LoadData().Sum(x => SolveMachineWithoutArray(x) ?? 0);
+   public static long CountTokensShifted() => LoadData().Sum(x => SolveMachineSingleLoop(x) ?? 0);
 
-   private static long? SolveMachineWithoutArray(ClawMachineData machine)
+   private static long? SolveMachineSingleLoop(ClawMachineData machine)
    {
       var aButton = machine.AButton;
       var bButton = machine.BButton;
 
-      machine = machine with
-      {
-         PrizeX = machine.PrizeX + 10000000000000,
-         PrizeY = machine.PrizeY + 10000000000000,
-      };
+      //machine = machine with
+      //{
+      //   PrizeX = machine.PrizeX + 10000000000000,
+      //   PrizeY = machine.PrizeY + 10000000000000,
+      //};
 
       long? minCost = long.MaxValue;
-      var minXIncrement = Math.Min(aButton.XOffset, bButton.XOffset);
-      var minYIncrement = Math.Min(aButton.YOffset, bButton.YOffset);
-      var leastIncrement = Math.Max(machine.PrizeX / minXIncrement, machine.PrizeY / minYIncrement);
-
-      var stateAbove = new DPState(0, 0, 0);
 
       var i = 0;
-      while (stateAbove.X <= machine.PrizeX && stateAbove.Y <= machine.PrizeY)
+      while (true)
       {
-         stateAbove = new DPState(
-           stateAbove.X + (i * bButton.XOffset),
-           stateAbove.Y + (i * bButton.YOffset),
-           stateAbove.Cost + (i * bButton.Cost));
+         var dpState = new DPState(
+            i * bButton.XOffset,
+            i * bButton.YOffset,
+            i * bButton.Cost);
 
-         if (stateAbove.X == machine.PrizeX && stateAbove.Y == machine.PrizeY && stateAbove.Cost < minCost)
-            minCost = stateAbove.Cost;
+         if (dpState.X == machine.PrizeX && dpState.Y == machine.PrizeY && dpState.Cost < minCost)
+            minCost = dpState.Cost;
 
-         var j = 1;
-         var stateRight = stateAbove;
+         var xRemaining = machine.PrizeX - dpState.X;
+         var yRemaining = machine.PrizeY - dpState.Y;
 
-         while (stateRight.X <= machine.PrizeX || stateRight.Y <= machine.PrizeY)
+         if (xRemaining % aButton.XOffset == 0)
          {
-            stateRight = new DPState(
-              stateAbove.X + (j * aButton.XOffset),
-              stateAbove.Y + (j * aButton.YOffset),
-              stateAbove.Cost + (j * aButton.Cost));
-
-            if (stateRight.X == machine.PrizeX && stateRight.Y == machine.PrizeY && stateRight.Cost < minCost)
-               minCost = stateRight.Cost;
-
-            j++;
+            var n = xRemaining / aButton.XOffset;
+            if (n * aButton.YOffset == yRemaining)
+            {
+               var cost = (n * aButton.Cost) + dpState.Cost;
+               if (cost < minCost)
+                  minCost = cost;
+            }
          }
+
+         if (dpState.X > machine.PrizeX & dpState.Y > machine.PrizeY)
+            break;
 
          i++;
       }
@@ -79,7 +75,7 @@ public static class Day13
       var currentIState = dpTable[i++, 0]!.Value;
       var currentJState = dpTable[0, j++]!.Value;
 
-      for (i = 0; i < length; i++)
+      for (i = 1; i < length; i++)
       {
          dpTable[i, 0] = new DPState(
            currentIState.X + aButton.XOffset,
@@ -89,7 +85,7 @@ public static class Day13
          currentIState = dpTable[i, 0]!.Value;
       }
 
-      for (j = 0; j < length; j++)
+      for (j = 1; j < length; j++)
       {
          dpTable[0, j] = new DPState(
            currentJState.X + bButton.XOffset,
