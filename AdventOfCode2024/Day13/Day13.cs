@@ -2,20 +2,69 @@
 
 public static class Day13
 {
-   public static long CountTokens() => LoadData().Sum(x => SolveMachineWithArray(x) ?? 0);
+   public static long CountTokens() => LoadData().Sum(x => SolveMachineSingleLoop(x) ?? 0);
 
-   public static long CountTokensShifted() => LoadData().Sum(x => SolveMachineSingleLoop(x) ?? 0);
+   public static long CountTokensShifted() => LoadData().Sum(x => SolveWithMatrixDecomposition(x) ?? 0);
+
+   private static long? SolveUsingAlgLib(ClawMachineData machine)
+   {
+      var aButton = machine.AButton;
+      var bButton = machine.BButton;
+
+      alglib.minlpcreate(2, out var state);
+      alglib.minlpsetcost(state, [-aButton.Cost, -bButton.Cost]);
+      alglib.minlpsetbc(state, [0, 0], [double.PositiveInfinity, double.PositiveInfinity]);
+
+      var generalForm = new double[,]
+      {
+         { aButton.Cost, bButton.Cost },
+         { aButton.XOffset, bButton.XOffset },
+         { aButton.YOffset, bButton.YOffset },
+      };
+
+      var lowerBounds = new double[] { 0, machine.PrizeX, machine.PrizeY, };
+      var upperBounds = new double[] { double.PositiveInfinity, machine.PrizeX, machine.PrizeY };
+
+      alglib.minlpsetlc2dense(state, generalForm, lowerBounds, upperBounds, 3);
+      alglib.minlpoptimize(state);
+      alglib.minlpresults(state, out var results, out var rep);
+
+      return (int)((results[0] * aButton.Cost) + (results[1] * bButton.Cost));
+   }
+
+   private static long? SolveWithMatrixDecomposition(ClawMachineData machine)
+   {
+      var aButton = machine.AButton;
+      var bButton = machine.BButton;
+
+      machine = machine with
+      {
+         PrizeX = machine.PrizeX + 10000000000000,
+         PrizeY = machine.PrizeY + 10000000000000,
+      };
+
+      decimal n2Numerator = (aButton.XOffset * machine.PrizeY) - (aButton.YOffset * machine.PrizeX);
+      decimal n2Denominator = (aButton.XOffset * bButton.YOffset) - (aButton.YOffset * bButton.XOffset);
+
+      if (n2Numerator % n2Denominator != 0)
+         return null;
+
+      var n2 = n2Numerator / n2Denominator;
+
+      var n1Numerator = machine.PrizeX - (n2 * bButton.XOffset);
+      decimal n1Denominator = aButton.XOffset;
+
+      if (n1Numerator % n1Denominator != 0)
+         return null;
+
+      var n1 = n1Numerator / n1Denominator;
+      return (long)((n1 * aButton.Cost) + (n2 * bButton.Cost));
+   }
 
    private static long? SolveMachineSingleLoop(ClawMachineData machine)
    {
       var aButton = machine.AButton;
       var bButton = machine.BButton;
-
-      //machine = machine with
-      //{
-      //   PrizeX = machine.PrizeX + 10000000000000,
-      //   PrizeY = machine.PrizeY + 10000000000000,
-      //};
 
       long? minCost = long.MaxValue;
 
@@ -48,74 +97,6 @@ public static class Day13
             break;
 
          i++;
-      }
-
-      return minCost == long.MaxValue ? null : minCost;
-   }
-
-   private static long? SolveMachineWithArray(ClawMachineData machine)
-   {
-      var aButton = machine.AButton;
-      var bButton = machine.BButton;
-
-      var minAX = (machine.PrizeX / aButton.XOffset) + 1;
-      var minAY = (machine.PrizeY / aButton.YOffset) + 1;
-      var minBX = (machine.PrizeX / bButton.XOffset) + 1;
-      var minBY = (machine.PrizeY / bButton.YOffset) + 1;
-
-      var length = Math.Max(minAX, Math.Max(minAY, Math.Max(minBX, minBY)));
-      var dpTable = new DPState?[length, length];
-
-      var currentState = new DPState(0, 0, 0);
-      dpTable[0, 0] = currentState;
-
-      var i = 0;
-      var j = 0;
-
-      var currentIState = dpTable[i++, 0]!.Value;
-      var currentJState = dpTable[0, j++]!.Value;
-
-      for (i = 1; i < length; i++)
-      {
-         dpTable[i, 0] = new DPState(
-           currentIState.X + aButton.XOffset,
-           currentIState.Y + aButton.YOffset,
-           currentIState.Cost + aButton.Cost);
-
-         currentIState = dpTable[i, 0]!.Value;
-      }
-
-      for (j = 1; j < length; j++)
-      {
-         dpTable[0, j] = new DPState(
-           currentJState.X + bButton.XOffset,
-           currentJState.Y + bButton.YOffset,
-           currentJState.Cost + bButton.Cost);
-
-         currentJState = dpTable[0, j]!.Value;
-      }
-
-      long? minCost = long.MaxValue;
-
-      for (i = 1; i < length; i++)
-      {
-         for (j = 1; j < length; j++)
-         {
-            var lastAbove = dpTable[i - 1, j]!.Value;
-
-            dpTable[i, j] = new DPState(
-               lastAbove.X + aButton.XOffset,
-               lastAbove.Y + aButton.YOffset,
-               lastAbove.Cost + aButton.Cost);
-
-            currentState = dpTable[i, j]!.Value;
-
-            if (currentState.X == machine.PrizeX && currentState.Y == machine.PrizeY)
-            {
-               if (currentState.Cost < minCost)
-                  minCost = currentState.Cost;
-            }
-         }
       }
 
       return minCost == long.MaxValue ? null : minCost;
