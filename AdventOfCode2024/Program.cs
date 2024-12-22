@@ -1,10 +1,10 @@
-﻿using AdventOfCode2024.Day13;
+﻿using AdventOfCode2024.Day14;
 
 internal class Program
 {
    private static void Main(string[] args)
    {
-      var result = Day13.CountTokens();
+      var result = Day14.CountFewestMoves();
       Console.WriteLine(result);
    }
 }
