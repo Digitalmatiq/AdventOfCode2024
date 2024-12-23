@@ -4,7 +4,7 @@ internal class Program
 {
    private static void Main(string[] args)
    {
-      var result = Day15.SumOfBoxesCoordinates();
+      var result = Day15.SumOfExpandedBoxesCoordinates();
       Console.WriteLine(result);
    }
 }
